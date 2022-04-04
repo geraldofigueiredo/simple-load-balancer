@@ -23,12 +23,7 @@ var backends = []string{"localhost:8081", "localhost:8082", "localhost:8083"}
 
 func InitServer() {
 	serverPool := entity.NewEmptyServerPool()
-	serverPool.AddBackend(entity.NewBackend("backend-1", "http://localhost:8081"))
-	serverPool.AddBackend(entity.NewBackend("backend-2", "http://localhost:8082"))
-	serverPool.AddBackend(entity.NewBackend("backend-3", "http://localhost:8083"))
-
 	serverPoolService := service.NewServerPool(serverPool)
-
 	lbController := router.NewLoadBalancerController(serverPoolService)
 
 	for idx, backendUrlStr := range backends {
