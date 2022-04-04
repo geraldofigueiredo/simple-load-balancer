@@ -3,8 +3,8 @@ package router
 import (
 	"log"
 	"net/http"
+	context2 "simple-load-balancer/context"
 	"simple-load-balancer/contract"
-	"simple-load-balancer/server"
 )
 
 type LoadBalancerController struct {
@@ -18,7 +18,7 @@ func NewLoadBalancerController(serverPool contract.ServerPoolService) *LoadBalan
 }
 
 func (c *LoadBalancerController) LB(w http.ResponseWriter, r *http.Request) {
-	attempts := server.GetAttemptsFromContext(r)
+	attempts := context2.GetAttemptsFromContext(r)
 	if attempts > 3 {
 		log.Printf("%s(%s) Max attempts reached, terminating\n", r.RemoteAddr, r.URL.Path)
 		http.Error(w, "Service not available", http.StatusServiceUnavailable)

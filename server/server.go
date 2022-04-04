@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	context2 "simple-load-balancer/context"
 	"simple-load-balancer/entity"
 	"simple-load-balancer/server/router"
 	"simple-load-balancer/service"
@@ -37,11 +38,11 @@ func InitServer() {
 
 		proxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, e error) {
 			log.Printf("[%s] %s\n", serverUrl.Host, e.Error())
-			retries := GetRetryFromContext(request)
+			retries := context2.GetRetryFromContext(request)
 			if retries < 3 {
 				select {
 				case <-time.After(10 * time.Millisecond):
-					ctx := context.WithValue(request.Context(), Retry, retries+1)
+					ctx := context.WithValue(request.Context(), context2.Retry, retries+1)
 					proxy.ServeHTTP(writer, request.WithContext(ctx))
 				}
 				return
@@ -51,9 +52,9 @@ func InitServer() {
 			serverPool.SetBackendAlive(backendIndex, false)
 
 			// if the same request routing for few attempts with different backends, increase the count
-			attempts := GetAttemptsFromContext(request)
+			attempts := context2.GetAttemptsFromContext(request)
 			log.Printf("%s(%s) Attempting retry %d\n", request.RemoteAddr, request.URL.Path, attempts)
-			ctx := context.WithValue(request.Context(), Attempts, attempts+1)
+			ctx := context.WithValue(request.Context(), context2.Attempts, attempts+1)
 			lbController.LB(writer, request.WithContext(ctx))
 		}
 	}
@@ -62,20 +63,4 @@ func InitServer() {
 		Addr:    port,
 		Handler: http.HandlerFunc(lbController.LB),
 	}
-}
-
-// GetAttemptsFromContext returns the attempts for request
-func GetAttemptsFromContext(r *http.Request) int {
-	if attempts, ok := r.Context().Value(Attempts).(int); ok {
-		return attempts
-	}
-	return 1
-}
-
-// GetRetryFromContext returns the attempts for request
-func GetRetryFromContext(r *http.Request) int {
-	if retry, ok := r.Context().Value(Retry).(int); ok {
-		return retry
-	}
-	return 0
 }
