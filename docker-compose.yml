@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  api-1:
+    build: ./api
+    ports:
+      - "8081"
+    environment:
+      - "SERVER_PORT=8081"
+      - "SERVER_NAME=api-1"
+  api-2:
+    build: ./api
+    ports:
+      - "8082"
+    environment:
+      - "SERVER_PORT=8082"
+      - "SERVER_NAME=api-2"
+  api-3:
+    build: ./api
+    ports:
+      - "8082"
+    environment:
+      - "SERVER_PORT=8083"
+      - "SERVER_NAME=api-3"
+  load-balancer:
+    build: ./load-balancer
+    environment:
+      - "BACKENDS=http://api-1:8081,http://api-2:8082,http://api-3:8083"
+    depends_on:
+      - "api-1"
+      - "api-2"
+      - "api-3"
+    ports:
+      - "8080:8080"
