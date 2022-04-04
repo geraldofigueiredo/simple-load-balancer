@@ -1,9 +1,18 @@
 package service
 
 import (
+	"fmt"
+	"log"
+	"net"
+	"net/url"
 	"simple-load-balancer/contract"
 	"simple-load-balancer/entity"
 	"sync/atomic"
+	"time"
+)
+
+const (
+	SiteUnreachableMessage = "Site unreachable"
 )
 
 type serverPoolService struct {
@@ -33,4 +42,32 @@ func (s *serverPoolService) GetNextPeer() *entity.Backend {
 		}
 	}
 	return nil
+}
+
+func (s *serverPoolService) HealthCheck() {
+	for _, b := range s.pool.Backends {
+		alive := isBackendAlive(b.URL)
+		status := getStatusBasedOnAlive(alive)
+		b.SetAlive(alive)
+		log.Printf("%s [%s]\n", b.URL, status)
+	}
+}
+
+func getStatusBasedOnAlive(alive bool) string {
+	if alive {
+		return "up"
+	}
+	return "down"
+}
+
+// isBackendAlive checks if the backend is alive by pinging it
+func isBackendAlive(url *url.URL) bool {
+	timeout := 2 * time.Second
+	conn, err := net.DialTimeout("tcp", url.Host, timeout)
+	if err != nil {
+		log.Println(fmt.Sprintf("%s, error: %s", SiteUnreachableMessage, err))
+		return false
+	}
+	defer conn.Close()
+	return true
 }
