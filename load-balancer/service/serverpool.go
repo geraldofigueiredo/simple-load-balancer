@@ -46,7 +46,7 @@ func (s *serverPoolService) GetNextPeer() *entity.Backend {
 
 func (s *serverPoolService) HealthCheck() {
 	for _, b := range s.pool.Backends {
-		alive := isBackendAlive(b.URL)
+		alive := isBackendAlive(b.URL.String())
 		status := getStatusBasedOnAlive(alive)
 		b.SetAlive(alive)
 		log.Printf("%s [%s]\n", b.URL, status)
@@ -61,9 +61,15 @@ func getStatusBasedOnAlive(alive bool) string {
 }
 
 // isBackendAlive checks if the backend is alive by pinging it
-func isBackendAlive(url *url.URL) bool {
+func isBackendAlive(urlStr string) bool {
+	u, err := url.Parse(urlStr + "/health")
+	if err != nil {
+		log.Printf("Error parsing url: %s\n", err)
+		return false
+	}
+
 	timeout := 2 * time.Second
-	conn, err := net.DialTimeout("tcp", url.Host, timeout)
+	conn, err := net.DialTimeout("tcp", u.Host, timeout)
 	if err != nil {
 		log.Println(fmt.Sprintf("%s, error: %s", SiteUnreachableMessage, err))
 		return false
