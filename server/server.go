@@ -15,9 +15,7 @@ import (
 )
 
 const (
-	port         = ":8080"
-	Attempts int = iota
-	Retry
+	port = 8080
 )
 
 var backends = []string{"localhost:8081", "localhost:8082", "localhost:8083"}
@@ -59,8 +57,15 @@ func InitServer() {
 		}
 	}
 
-	_ = http.Server{
-		Addr:    port,
+	server := http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
 		Handler: http.HandlerFunc(lbController.LB),
+	}
+
+	go serverPoolService.HealthCheck()
+
+	log.Printf("Load Balancer started at :%d\n", port)
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatal(err)
 	}
 }
