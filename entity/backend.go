@@ -14,7 +14,7 @@ type Backend struct {
 	ReverseProxy *httputil.ReverseProxy
 }
 
-func NewBackend(name, urlStr string) *Backend {
+func NewBackend(name, urlStr string, reverseProxy *httputil.ReverseProxy) *Backend {
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		panic(err)
@@ -23,7 +23,7 @@ func NewBackend(name, urlStr string) *Backend {
 		Name:         name,
 		URL:          u,
 		Alive:        true,
-		ReverseProxy: httputil.NewSingleHostReverseProxy(u),
+		ReverseProxy: reverseProxy,
 	}
 }
 
@@ -40,4 +40,10 @@ func (b *Backend) IsAlive() (alive bool) {
 	alive = b.Alive
 	b.mux.Unlock()
 	return
+}
+
+func (b *Backend) SetReverseProxy(rp *httputil.ReverseProxy) {
+	b.mux.Lock()
+	b.ReverseProxy = rp
+	b.mux.Unlock()
 }
