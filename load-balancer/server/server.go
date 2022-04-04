@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	context2 "simple-load-balancer/context"
 	"simple-load-balancer/entity"
 	"simple-load-balancer/server/router"
 	"simple-load-balancer/service"
+	"strings"
 	"time"
 )
 
@@ -18,14 +20,16 @@ const (
 	port = 8080
 )
 
-var backends = []string{"localhost:8081", "localhost:8082", "localhost:8083"}
-
 func InitServer() {
+	backends := os.Getenv("BACKENDS")
+	if backends == "" {
+		backends = "http://localhost:8081,http://localhost:8082,http://localhost:8083"
+	}
 	serverPool := entity.NewEmptyServerPool()
 	serverPoolService := service.NewServerPool(serverPool)
 	lbController := router.NewLoadBalancerController(serverPoolService)
 
-	for idx, backendUrlStr := range backends {
+	for idx, backendUrlStr := range strings.Split(backends, ",") {
 		serverUrl, err := url.Parse(backendUrlStr)
 		if err != nil {
 			log.Fatal(err)
